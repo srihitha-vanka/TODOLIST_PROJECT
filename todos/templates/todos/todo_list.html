@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Todo List</title>
+    <style>
+        .completed {
+            text-decoration: line-through;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const todoId = this.getAttribute('data-id');
+                    fetch(`{% url 'toggle_todo' 0 %}`.replace('0', todoId), {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ completed: this.checked }),
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            const span = this.nextElementSibling;
+                            span.classList.toggle('completed', this.checked);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Todo List</h1>
+    <a href="{% url 'add_todo' %}">Add Todo</a>
+    <ul>
+        {% for todo in todos %}
+            <li>
+                <input type="checkbox" data-id="{{ todo.id }}" {% if todo.completed %}checked{% endif %}>
+                <span class="{% if todo.completed %}completed{% endif %}">
+                    {{ todo.title }} (Added: {{ todo.created_date }})
+                </span>
+                <a href="{% url 'delete_todo' todo.id %}">Delete</a>
+            </li>
+        {% empty %}
+            <li>No todos yet!</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
